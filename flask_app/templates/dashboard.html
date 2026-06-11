@@ -16,13 +16,43 @@
   <strong>{{ user.full_name }}</strong> &nbsp;·&nbsp; {{ user.email }} &nbsp;·&nbsp; {{ user.mobile }}
 </div>
 
-<!-- AUTH TOKEN stored in sessionStorage for reliable access -->
 <script>
   // Store auth token from URL into sessionStorage immediately on page load
   (function() {
     const urlAuth = new URLSearchParams(window.location.search).get('auth');
     if (urlAuth) sessionStorage.setItem('digitranva_auth', urlAuth);
+
+    // Auto-load last run results from DynamoDB on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(loadLastResults, 800);
+    });
   })();
+
+  async function loadLastResults() {
+    try {
+      const authToken = getAuth();
+      if (!authToken) return;
+      const res  = await fetch(API_BASE + '/test-status?auth=' + encodeURIComponent(authToken));
+      const data = await res.json();
+      if (data.status && data.status !== 'idle' && data.results && data.results.length > 0) {
+        document.getElementById('resultsSection').style.display = 'block';
+        renderResults(data.results);
+        if (data.summary) updateStats(data.summary);
+        const s = data.summary || {};
+        if (data.status === 'completed' || data.status === 'failed') {
+          setBanner(
+            (data.status === 'completed' ? '✅' : '❌') +
+            ` Last run: ${s.passed||0}/${s.total||0} passed (${s.pass_rate||0}%) | Accuracy: ${s.avg_accuracy||0}%`,
+            data.status === 'completed' ? 'completed' : 'failed'
+          );
+          if (data.report_path) {
+            document.getElementById('reportLink').href = '/' + data.report_path;
+            document.getElementById('reportSection').style.display = 'block';
+          }
+        }
+      }
+    } catch(e) { /* ignore */ }
+  }
 </script>
 
 <!-- RUN BUTTON -->
@@ -228,8 +258,15 @@
 
       if (res.status === 503 || data.status === 'error') {
         const msg = data.message || 'Unknown error';
-        setBanner((res.status === 503 ? '🖥️ ' : '❌ ') + msg,
-                  res.status === 503 ? 'partial' : 'failed');
+        if (res.status === 503) {
+          setBanner(
+            '🖥️ To run automation from cloud: start local app + ngrok, then set RUNNER_WEBHOOK_URL in Lambda. ' +
+            'Or open http://localhost:5000 directly.',
+            'partial'
+          );
+        } else {
+          setBanner('❌ ' + msg, 'failed');
+        }
         btn.disabled = false; btn.textContent = '🤖 Run Voice AI Automation Test';
         return;
       }

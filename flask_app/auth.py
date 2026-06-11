@@ -189,6 +189,38 @@ def dashboard():
     return render_template("dashboard.html", user=user, auth_token=auth)
 
 
+@auth_bp.route("/trigger-automation", methods=["POST"])
+def trigger_automation():
+    """
+    Endpoint called by Lambda via RUNNER_WEBHOOK_URL (ngrok tunnel).
+    Runs Playwright automation locally and stores results in DynamoDB.
+    Not protected by auth — only callable from Lambda via internal webhook.
+    """
+    if IS_LAMBDA:
+        return jsonify({"error": "not available on Lambda"}), 400
+
+    full_name = request.form.get("full_name", "")
+    email     = request.form.get("email",     "")
+    mobile    = request.form.get("mobile",    "")
+
+    if not email:
+        return jsonify({"error": "missing email"}), 400
+
+    from automation import run_automation_async
+    import threading, time as _t
+    rs = run_automation_async(full_name, email, mobile)
+    dynamo_results.store_result(email, rs)
+
+    def _sync():
+        while rs.get("status") == "running":
+            dynamo_results.store_result(email, rs)
+            _t.sleep(2)
+        dynamo_results.store_result(email, rs)
+
+    threading.Thread(target=_sync, daemon=True).start()
+    return jsonify({"status": "running", "message": "Automation started on local runner."})
+
+
 @auth_bp.route("/run-test", methods=["POST"])
 def run_test():
     auth = request.form.get("auth_token", "") or request.args.get("auth", "")
@@ -204,28 +236,60 @@ def run_test():
     mobile    = user.get("mobile",    "")
 
     if IS_LAMBDA:
-        import boto3
-        lc = boto3.client("lambda", region_name=os.environ.get("AWS_REGION", "us-east-1"))
-        automation_fn = os.environ.get("AUTOMATION_LAMBDA", "")
-        if not automation_fn:
+        # Option 1: Dedicated automation Lambda (if configured)
+        automation_fn     = os.environ.get("AUTOMATION_LAMBDA", "")
+        runner_webhook    = os.environ.get("RUNNER_WEBHOOK_URL", "")  # e.g. https://xxxx.ngrok.io/run-test
+
+        if automation_fn:
+            # Invoke async automation Lambda
+            import boto3
+            lc = boto3.client("lambda", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+            try:
+                lc.invoke(
+                    FunctionName   = automation_fn,
+                    InvocationType = "Event",
+                    Payload        = json.dumps({"full_name": full_name, "email": email, "mobile": mobile}),
+                )
+                dynamo_results.store_result(email, {
+                    "status": "running", "progress": 0,
+                    "current_test": "Starting automation Lambda...",
+                    "message": "Automation started.", "results": [],
+                })
+            except Exception as e:
+                return jsonify({"status": "error", "message": str(e)}), 500
+
+        elif runner_webhook:
+            # Option 2: Forward to local machine via ngrok/tunnel
+            import urllib.request as _ur, urllib.parse as _up
+            try:
+                payload = _up.urlencode({
+                    "full_name": full_name, "email": email, "mobile": mobile
+                }).encode()
+                req = _ur.Request(runner_webhook, data=payload,
+                    headers={"Content-Type": "application/x-www-form-urlencoded"})
+                with _ur.urlopen(req, timeout=10) as r:
+                    resp_body = r.read().decode()
+                dynamo_results.store_result(email, {
+                    "status": "running", "progress": 0,
+                    "current_test": "Automation triggered on remote runner...",
+                    "message": "Automation started via webhook.", "results": [],
+                })
+                print(f"[Runner] Forwarded to {runner_webhook}: {resp_body[:100]}")
+            except Exception as e:
+                return jsonify({"status": "error",
+                                "message": f"Remote runner unreachable: {e}. "
+                                           f"Start local app and set RUNNER_WEBHOOK_URL."}), 503
+
+        else:
+            # No runner configured — clear message
             return jsonify({
                 "status":  "error",
-                "message": "Playwright automation requires a local environment with a browser. "
-                           "Open the app locally (python flask_app/app.py) and click Test there."
+                "message": (
+                    "Playwright needs a browser environment. "
+                    "To enable cloud automation: run 'python flask_app/app.py' locally, "
+                    "expose it with ngrok, then set RUNNER_WEBHOOK_URL in Lambda env vars."
+                )
             }), 503
-        try:
-            lc.invoke(
-                FunctionName   = automation_fn,
-                InvocationType = "Event",
-                Payload        = json.dumps({"full_name": full_name, "email": email, "mobile": mobile}),
-            )
-            dynamo_results.store_result(email, {
-                "status": "running", "progress": 0,
-                "current_test": "Starting automation Lambda...",
-                "message": "Automation started.", "results": [],
-            })
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
     else:
         from automation import run_automation_async
         import threading, time as _t
