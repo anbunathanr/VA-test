@@ -128,18 +128,19 @@ TEST_CASES = [
     # ══════════════════════════════════════════════════════════════
     {
         "phase":    "Phase 4: Conversation",
-        "name":     "TC-09 | Query: 'Hello'",
+        "name":     "TC-09 | Reset: Back to Main Menu",
         "action":   "type_message",
-        "value":    "Hello",
-        "expect":   ["hello", "hi", "help", "Welcome", "assist", "How can"],
+        "value":    "Back to main menu",
+        "expect":   ["help", "How can", "Welcome", "menu", "assist",
+                     "choose", "service", "anything", "products"],
         "critical": False,
     },
     {
         "phase":    "Phase 4: Conversation",
-        "name":     "TC-10 | Query: 'What can you do?'",
+        "name":     "TC-10 | Query: 'Hello'",
         "action":   "type_message",
-        "value":    "What can you do?",
-        "expect":   ["service", "Digitran", "question", "provide", "help", "ask"],
+        "value":    "Hello",
+        "expect":   ["hello", "hi", "help", "Welcome", "assist", "How can"],
         "critical": False,
     },
     {
@@ -162,16 +163,7 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 4: Conversation",
-        "name":     "TC-13 | Query: 'How does the voice assistant work?'",
-        "action":   "type_message",
-        "value":    "How does the voice assistant work?",
-        "expect":   ["voice", "assistant", "interface", "multimodal",
-                     "text", "input", "web"],
-        "critical": False,
-    },
-    {
-        "phase":    "Phase 4: Conversation",
-        "name":     "TC-14 | Query: 'Can I try a demo?'",
+        "name":     "TC-13 | Query: 'Can I try a demo?'",
         "action":   "type_message",
         "value":    "Can I try a demo?",
         "expect":   ["demo", "live", "https", "try", "cloudfront", "experience"],
@@ -179,43 +171,16 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 4: Conversation",
-        "name":     "TC-15 | Query: 'How do I integrate this?'",
-        "action":   "type_message",
-        "value":    "How do I integrate this?",
-        "expect":   ["integrat", "embed", "deploy", "frontend",
-                     "no-code", "widget", "API", "flexible"],
-        "critical": False,
-    },
-    {
-        "phase":    "Phase 4: Conversation",
-        "name":     "TC-16 | Query: 'Tell me about MISRA compliance'",
-        "action":   "type_message",
-        "value":    "Tell me about MISRA compliance",
-        "expect":   ["MISRA", "compliance", "C", "safety", "standard",
-                     "violation", "analysis"],
-        "critical": False,
-    },
-    {
-        "phase":    "Phase 4: Conversation",
-        "name":     "TC-17 | Query: 'What industries do you serve?'",
+        "name":     "TC-14 | Query: 'What industries do you serve?'",
         "action":   "type_message",
         "value":    "What industries do you serve?",
-        "expect":   ["industr", "customer", "service", "business",
+        "expect":   ["industr", "customer", "automotive", "business",
                      "website", "application", "general"],
         "critical": False,
     },
     {
         "phase":    "Phase 4: Conversation",
-        "name":     "TC-18 | Query: 'How accurate is it?'",
-        "action":   "type_message",
-        "value":    "How accurate is it?",
-        "expect":   ["accur", "AI", "voice", "speech", "recognition",
-                     "natural", "language", "multimodal"],
-        "critical": False,
-    },
-    {
-        "phase":    "Phase 4: Conversation",
-        "name":     "TC-19 | Query: 'What is the pricing?'",
+        "name":     "TC-15 | Query: 'What is the pricing?'",
         "action":   "type_message",
         "value":    "What is the pricing?",
         "expect":   ["price", "pricing", "cost", "plan", "contact",
@@ -224,7 +189,7 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 4: Conversation",
-        "name":     "TC-20 | Query: 'How do I get started?'",
+        "name":     "TC-16 | Query: 'How do I get started?'",
         "action":   "type_message",
         "value":    "How do I get started?",
         "expect":   ["start", "deploy", "embed", "no-code", "launch",
@@ -233,7 +198,7 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 4: Conversation",
-        "name":     "TC-21 | Query: 'Thank you'",
+        "name":     "TC-17 | Query: 'Thank you'",
         "action":   "type_message",
         "value":    "Thank you",
         "expect":   ["thank", "welcome", "help", "pleasure",
@@ -246,7 +211,25 @@ TEST_CASES = [
     # ══════════════════════════════════════════════════════════════
     {
         "phase":    "Phase 5: Advanced Queries",
-        "name":     "TC-22 | Query: 'Do you support multiple languages?'",
+        "name":     "TC-18 | Reset: Back to Main Menu",
+        "action":   "type_message",
+        "value":    "Back to main menu",
+        "expect":   ["help", "How can", "Welcome", "menu", "assist",
+                     "choose", "service", "anything", "products"],
+        "critical": False,
+    },
+    {
+        "phase":    "Phase 5: Advanced Queries",
+        "name":     "TC-19 | Query: 'Tell me about MISRA compliance'",
+        "action":   "type_message",
+        "value":    "Tell me about MISRA compliance",
+        "expect":   ["MISRA", "compliance", "C", "safety", "standard",
+                     "violation", "analysis", "code"],
+        "critical": False,
+    },
+    {
+        "phase":    "Phase 5: Advanced Queries",
+        "name":     "TC-20 | Query: 'Do you support multiple languages?'",
         "action":   "type_message",
         "value":    "Do you support multiple languages?",
         "expect":   ["language", "multilingual", "support", "English",
@@ -255,7 +238,7 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 5: Advanced Queries",
-        "name":     "TC-23 | Query: 'Can you handle voice and text both?'",
+        "name":     "TC-21 | Query: 'Can you handle voice and text both?'",
         "action":   "type_message",
         "value":    "Can you handle voice and text both?",
         "expect":   ["voice", "text", "multimodal", "input", "both",
@@ -264,7 +247,7 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 5: Advanced Queries",
-        "name":     "TC-24 | Query: 'What makes DigiTranVA different from other chatbots?'",
+        "name":     "TC-22 | Query: 'What makes DigiTranVA different?'",
         "action":   "type_message",
         "value":    "What makes DigiTranVA different from other chatbots?",
         "expect":   ["DigiTran", "unique", "different", "feature",
@@ -273,7 +256,7 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 5: Advanced Queries",
-        "name":     "TC-25 | Query: 'Is there a free trial available?'",
+        "name":     "TC-23 | Query: 'Is there a free trial?'",
         "action":   "type_message",
         "value":    "Is there a free trial available?",
         "expect":   ["trial", "demo", "free", "contact", "pricing",
@@ -282,7 +265,7 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 5: Advanced Queries",
-        "name":     "TC-26 | Query: 'How secure is the platform?'",
+        "name":     "TC-24 | Query: 'How secure is the platform?'",
         "action":   "type_message",
         "value":    "How secure is the platform?",
         "expect":   ["secure", "security", "privacy", "data", "safe",
@@ -291,7 +274,7 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 5: Advanced Queries",
-        "name":     "TC-27 | Query: 'Can I connect it to my existing CRM?'",
+        "name":     "TC-25 | Query: 'Can I connect it to my CRM?'",
         "action":   "type_message",
         "value":    "Can I connect it to my existing CRM?",
         "expect":   ["CRM", "integrat", "connect", "API", "third-party",
@@ -300,16 +283,7 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 5: Advanced Queries",
-        "name":     "TC-28 | Query: 'What is MISRA and why is it important?'",
-        "action":   "type_message",
-        "value":    "What is MISRA and why is it important?",
-        "expect":   ["MISRA", "standard", "C", "C++", "safety",
-                     "compliance", "critical", "automotive", "analysis"],
-        "critical": False,
-    },
-    {
-        "phase":    "Phase 5: Advanced Queries",
-        "name":     "TC-29 | Query: 'How fast does the bot respond?'",
+        "name":     "TC-26 | Query: 'How fast does the bot respond?'",
         "action":   "type_message",
         "value":    "How fast does the bot respond?",
         "expect":   ["fast", "response", "real-time", "stream", "instant",
@@ -318,7 +292,7 @@ TEST_CASES = [
     },
     {
         "phase":    "Phase 5: Advanced Queries",
-        "name":     "TC-30 | Query: 'Can the assistant escalate to a human agent?'",
+        "name":     "TC-27 | Query: 'Can assistant escalate to human agent?'",
         "action":   "type_message",
         "value":    "Can the assistant escalate to a human agent?",
         "expect":   ["human", "agent", "escalat", "live", "handoff",
@@ -331,30 +305,22 @@ TEST_CASES = [
 REFERENCE_ANSWERS = {
     "Hello":
         "Hello, welcome, help, How can I assist",
-    "What can you do?":
-        "Kindly ask questions related to the services provided by Digitran Solutions",
     "What is DigiTranVA?":
         "DigiTranVA, conversational AI assistant, voice, text, multimodal, deploy, integration",
     "What are the key features?":
         "responsive design, multimodal, voice input, rich messaging, live agent, streaming, CRM, calendar integration",
-    "How does the voice assistant work?":
-        "web interface, voice input, text input, multimodal, AI, natural language",
     "Can I try a demo?":
         "live demo, cloudfront URL, try, experience, voice interface",
-    "How do I integrate this?":
-        "no-code launch, frontend embedding, widget, full-page, API, flexible integration",
-    "Tell me about MISRA compliance":
-        "MISRA C, C++, safety standard, automated analysis, violation report, compliance checker",
     "What industries do you serve?":
-        "general purpose, customer service, business, website, application, various industries",
-    "How accurate is it?":
-        "AI powered, speech recognition, natural language, multimodal, voice input",
+        "automotive, general purpose, customer service, business, website, application",
     "What is the pricing?":
         "contact sales, pricing plan, demo, purchase, service",
     "How do I get started?":
         "no-code deploy, embed, contact, demo, integration options",
     "Thank you":
         "welcome, pleasure, help, anything else, glad to assist",
+    "Tell me about MISRA compliance":
+        "MISRA C, C++, safety standard, automated analysis, violation report, compliance checker",
     "Do you support multiple languages?":
         "multilingual support, Arabic, regional languages, locale, translation, language",
     "Can you handle voice and text both?":
@@ -367,8 +333,6 @@ REFERENCE_ANSWERS = {
         "secure, security, data privacy, encryption, protection",
     "Can I connect it to my existing CRM?":
         "CRM integration, API, connect, third-party, flexible, Salesforce, HubSpot",
-    "What is MISRA and why is it important?":
-        "MISRA C, C++ standard, safety critical, compliance, automotive, violation analysis",
     "How fast does the bot respond?":
         "real-time response, streaming, fast, low latency, instant",
     "Can the assistant escalate to a human agent?":

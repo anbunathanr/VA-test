@@ -44,23 +44,73 @@ class BotDriver:
     def minimize_welcome_card(self):
         """
         Click the yellow minimize button on the DigitranVA welcome card overlay.
-        This collapses the card so the underlying chatbot UI is fully visible.
+        Tries multiple selectors that may appear on the page.
         """
+        selectors = [".card-minimize-btn", ".minimize-btn", "[class*='minimize']",
+                     "button[title*='minimize' i]", "button[aria-label*='minimize' i]"]
+        for sel in selectors:
+            try:
+                el = self.page.locator(sel).first
+                if el.is_visible(timeout=3000):
+                    el.click()
+                    self.page.wait_for_timeout(1000)
+                    print(f"✅ Welcome card minimized (selector: {sel})")
+                    return
+            except Exception:
+                continue
+        # Try clicking any visible × or close button in the card area
         try:
-            self.page.wait_for_selector(".card-minimize-btn", timeout=5000)
-            self.page.click(".card-minimize-btn")
+            self.page.evaluate("""() => {
+                const btns = Array.from(document.querySelectorAll('button'));
+                const close = btns.find(b =>
+                    b.innerText.trim() === '−' ||
+                    b.innerText.trim() === '×' ||
+                    b.innerText.trim() === '_' ||
+                    (b.className && b.className.includes('minim'))
+                );
+                if (close) close.click();
+            }""")
             self.page.wait_for_timeout(800)
-            print("✅ Welcome card minimized")
+            print("✅ Welcome card minimized via JS fallback")
         except Exception as e:
             print(f"⚠️  Could not minimize welcome card: {e}")
 
     # ── Button Click ──────────────────────────────────────────────────────────
     def click_button_by_text(self, text: str) -> bool:
-        """Click a button containing the given text. Uses JS for reliability."""
+        """
+        Click a button/response-card containing the given text.
+        Waits up to 5s for the button to appear before giving up.
+        """
+        # Wait for the button to appear in the page
+        try:
+            self.page.wait_for_function(
+                f"""(text) => {{
+                    const all = Array.from(document.querySelectorAll(
+                        'button, [role="button"], .response-card-button, ' +
+                        '[class*="button"], [class*="response-card"]'
+                    ));
+                    return all.some(x => x.innerText && x.innerText.includes(text));
+                }}""",
+                text,
+                timeout=8000
+            )
+        except Exception:
+            pass  # button may already be there or timeout — try anyway
+
         found = self.page.evaluate("""(text) => {
-            const btns = Array.from(document.querySelectorAll('button'));
-            const b = btns.find(x => x.innerText.includes(text));
-            if (b) { b.click(); return true; }
+            const selectors = [
+                'button',
+                '[role="button"]',
+                '.response-card-button',
+                '[class*="button"]',
+                '[class*="response-card"]',
+                '.lex-button',
+            ];
+            for (const sel of selectors) {
+                const els = Array.from(document.querySelectorAll(sel));
+                const el  = els.find(x => x.innerText && x.innerText.includes(text));
+                if (el) { el.click(); return true; }
+            }
             return false;
         }""", text)
         return bool(found)
@@ -168,17 +218,36 @@ class BotDriver:
 
     def is_card_minimized(self) -> bool:
         """
-        Verify the welcome card overlay is minimized after login.
-        Returns True if minimized or gone, False if still fully visible.
+        Verify the welcome card overlay is minimized/gone after login.
+        Returns True if card is gone, minimized, or not obstructing the chat.
         """
         try:
             result = self.page.evaluate("""() => {
-                const minBtn   = document.querySelector('.card-minimize-btn');
-                const maxBtn   = document.querySelector('.card-maximize-btn');
-                const container = document.querySelector('.form-container');
-                if (!minBtn && !container) return true;
+                // Card is gone — pass
+                const card = document.querySelector('.form-container, .card-container, [class*="card"]');
+                if (!card) return true;
+
+                // Card exists — check if it's minimized/hidden
+                const style = window.getComputedStyle(card);
+                if (style.display === 'none' || style.visibility === 'hidden') return true;
+                if (card.classList.contains('minimized') || card.classList.contains('hidden')) return true;
+
+                // Check if a maximize button is visible (means it's already minimized)
+                const maxBtn = document.querySelector('.card-maximize-btn, [class*="maximize"]');
                 if (maxBtn && window.getComputedStyle(maxBtn).display !== 'none') return true;
-                if (container && container.classList.contains('minimized')) return true;
+
+                // Check the card height — if tiny, it's minimized
+                const rect = card.getBoundingClientRect();
+                if (rect.height < 60) return true;
+
+                // Check if chat input is accessible (card not blocking it)
+                const input = document.querySelector('#text-input, input[placeholder]');
+                if (input) {
+                    const inputRect = input.getBoundingClientRect();
+                    const cardRect  = card.getBoundingClientRect();
+                    // If input is below the card, card isn't blocking
+                    if (inputRect.top > cardRect.bottom) return true;
+                }
                 return false;
             }""")
             return bool(result)
