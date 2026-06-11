@@ -1,0 +1,265 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: DigiTranVA AI Testing Automation Platform — Serverless
+
+# ⚠️  NO AWS credentials in this file.
+# IAM roles defined here grant least-privilege access only.
+
+Parameters:
+  FlaskSecretKey:
+    Type: String
+    NoEcho: true
+    Description: Flask secret key for session signing
+  N8nWebhookUrl:
+    Type: String
+    Default: "https://n8n.digitransolutions.in/webhook/send-report"
+  Stage:
+    Type: String
+    Default: prod
+    AllowedValues: [prod, dev]
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 300
+    MemorySize: 512
+    Environment:
+      Variables:
+        FLASK_SECRET_KEY:   !Ref FlaskSecretKey
+        N8N_WEBHOOK_URL:    !Ref N8nWebhookUrl
+        SESSIONS_TABLE:     Sessions
+        OTP_TABLE:          OTP
+        RESULTS_TABLE:      digitranva-conversations
+        AWS_REGION_NAME:    !Ref AWS::Region
+        AUTOMATION_LAMBDA:  !Sub "digitranva-automation-${Stage}"
+        STAGE:              !Ref Stage
+
+Resources:
+
+  # ── IAM Role for Flask Lambda ──────────────────────────────────────────────
+  FlaskLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "digitranva-flask-role-${Stage}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DigiTranVAPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # DynamoDB — only the 3 tables we need
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/Sessions"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/OTP"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/digitranva-conversations"
+              # Invoke automation Lambda
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:digitranva-automation-${Stage}"
+              # S3 — reports bucket
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource: !Sub "arn:aws:s3:::digitranva-reports-${AWS::AccountId}/*"
+
+  # ── Flask Lambda (main app) ────────────────────────────────────────────────
+  FlaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "digitranva-flask-${Stage}"
+      CodeUri: ../flask_app/
+      Handler: app.handler
+      Role: !GetAtt FlaskLambdaRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+        Root:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /
+            Method: ANY
+
+  # ── HTTP API Gateway ───────────────────────────────────────────────────────
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Sub "digitranva-api-${Stage}"
+      CorsConfiguration:
+        AllowOrigins:
+          - !Sub "https://${CloudFrontDistribution.DomainName}"
+        AllowMethods: ["GET", "POST", "OPTIONS"]
+        AllowHeaders: ["Content-Type", "Cookie", "Set-Cookie"]
+        AllowCredentials: true
+
+  # ── S3 Bucket — Frontend static files ─────────────────────────────────────
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "digitranva-frontend-${AWS::AccountId}"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+
+  # ── CloudFront Distribution ────────────────────────────────────────────────
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "digitranva-oac-${Stage}"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: DigiTranVA AI Testing Platform
+        DefaultRootObject: index.html
+        Origins:
+          # S3 origin for static files
+          - Id: S3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig: {}
+            OriginAccessControlId: !GetAtt CloudFrontOAC.Id
+          # API Gateway origin for backend
+          - Id: APIOrigin
+            DomainName: !Sub "${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            CustomOriginConfig:
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized
+          AllowedMethods: [GET, HEAD]
+        CacheBehaviors:
+          # Route /send-otp, /verify-otp, /run-test etc. to API Gateway
+          - PathPattern: "/send-otp"
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # CachingDisabled
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: all
+          - PathPattern: "/verify-otp"
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: all
+          - PathPattern: "/verify"
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: all
+          - PathPattern: "/dashboard"
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: all
+          - PathPattern: "/run-test"
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: all
+          - PathPattern: "/test-status"
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: all
+          - PathPattern: "/logout"
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: all
+
+  # ── Reports S3 Bucket ─────────────────────────────────────────────────────
+  ReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "digitranva-reports-${AWS::AccountId}"
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldReports
+            Status: Enabled
+            ExpirationInDays: 30
+
+Outputs:
+  CloudFrontURL:
+    Description: "Application URL via CloudFront"
+    Value: !Sub "https://${CloudFrontDistribution.DomainName}"
+  ApiGatewayURL:
+    Description: "API Gateway URL"
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  FrontendBucket:
+    Description: "S3 bucket for frontend"
+    Value: !Ref FrontendBucket

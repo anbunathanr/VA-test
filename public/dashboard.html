@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - DigiTransolutions</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e8f0fe 0%, #f3e8ff 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(26, 115, 232, 0.12);
+      padding: 52px 44px;
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+    }
+
+    .logo {
+      margin-bottom: 32px;
+    }
+
+    .logo h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a73e8;
+      letter-spacing: 0.5px;
+    }
+
+    .welcome {
+      font-size: 16px;
+      color: #444;
+      margin-bottom: 12px;
+    }
+
+    .welcome strong {
+      color: #1a73e8;
+    }
+
+    .verified-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #e6f4ea;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 36px;
+    }
+
+    .verified-badge svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #222;
+      margin-bottom: 28px;
+    }
+
+    .btn-test {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(135deg, #1a73e8, #7c4dff);
+      color: #fff;
+      letter-spacing: 0.5px;
+      transition: opacity 0.2s, transform 0.1s;
+      box-shadow: 0 4px 16px rgba(26, 115, 232, 0.25);
+    }
+
+    .btn-test:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    .btn-test:active {
+      transform: translateY(0);
+    }
+
+    .result-box {
+      margin-top: 20px;
+      padding: 14px 16px;
+      background: #e8f0fe;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #1a73e8;
+      font-weight: 500;
+      display: none;
+    }
+
+    .meta {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid #f0f0f0;
+      font-size: 12px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <h1>DigiTransolutions</h1>
+    </div>
+
+    <p class="welcome">Welcome, <strong id="userName">User</strong>!</p>
+
+    <div class="verified-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      Identity Verified
+    </div>
+
+    <h2>Dashboard</h2>
+
+    <button class="btn-test" id="testBtn" onclick="handleTest()">Test</button>
+
+    <div class="result-box" id="resultBox">
+      ✅ Test executed successfully! Your session is active and verified.
+    </div>
+
+    <div class="meta" id="userMeta"></div>
+  </div>
+
+  <script>
+    // Load verified user from session storage
+    const userRaw = sessionStorage.getItem('verifiedUser');
+
+    if (!userRaw) {
+      // Not verified — redirect back to sign-in
+      window.location.href = '/';
+    } else {
+      const user = JSON.parse(userRaw);
+      document.getElementById('userName').textContent = user.fullName || 'User';
+      document.getElementById('userMeta').textContent =
+        `${user.email}  •  ${user.phone}`;
+    }
+
+    function handleTest() {
+      const btn = document.getElementById('testBtn');
+      const result = document.getElementById('resultBox');
+      btn.textContent = 'Running...';
+      btn.disabled = true;
+
+      setTimeout(() => {
+        result.style.display = 'block';
+        btn.textContent = 'Test';
+        btn.disabled = false;
+      }, 1000);
+    }
+  </script>
+</body>
+</html>

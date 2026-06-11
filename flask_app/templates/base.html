@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}DigiTran Solutions{% endblock %}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e8f0fe 0%, #f3e8ff 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      padding: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(26, 115, 232, 0.13);
+      padding: 44px 40px 40px;
+      width: 100%;
+      max-width: 460px;
+    }
+
+    .logo { text-align: center; margin-bottom: 28px; }
+    .logo h1 { font-size: 22px; font-weight: 700; color: #1a73e8; }
+    .logo p  { font-size: 12px; color: #999; margin-top: 4px; }
+
+    h2 { font-size: 20px; font-weight: 600; color: #222; margin-bottom: 22px; text-align: center; }
+
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 5px; }
+
+    input[type="text"], input[type="email"], input[type="tel"], input[type="number"] {
+      width: 100%; padding: 11px 14px; border: 1.5px solid #d0d7de;
+      border-radius: 8px; font-size: 15px; color: #222; outline: none;
+      background: #fafbfc; transition: border 0.2s;
+    }
+    input:focus { border-color: #1a73e8; background: #fff; }
+
+    .btn {
+      width: 100%; padding: 13px; border: none; border-radius: 8px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, opacity 0.2s; margin-top: 6px;
+    }
+    .btn-primary { background: #1a73e8; color: #fff; }
+    .btn-primary:hover { background: #1558b0; }
+
+    /* Flash messages */
+    .flashes { list-style: none; margin-bottom: 18px; }
+    .flash {
+      padding: 11px 14px; border-radius: 8px; font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .flash.success { background: #e6f4ea; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .flash.error   { background: #fdecea; color: #c62828; border: 1px solid #ef9a9a; }
+    .flash.info    { background: #e8f0fe; color: #1a73e8; border: 1px solid #aac4f5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <h1>DigiTran Solutions</h1>
+      <p>AI Testing Automation Platform</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="flash {{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

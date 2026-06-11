@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In - DigiTransolutions</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e8f0fe 0%, #f3e8ff 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(26, 115, 232, 0.12);
+      padding: 44px 40px 40px;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a73e8;
+      letter-spacing: 0.5px;
+    }
+
+    .logo p {
+      font-size: 13px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #222;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"] {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #d0d7de;
+      border-radius: 8px;
+      font-size: 15px;
+      color: #222;
+      outline: none;
+      transition: border 0.2s;
+      background: #fafbfc;
+    }
+
+    input:focus {
+      border-color: #1a73e8;
+      background: #fff;
+    }
+
+    input.error {
+      border-color: #e53935;
+    }
+
+    .field-error {
+      font-size: 12px;
+      color: #e53935;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn-primary {
+      background: #1a73e8;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #1558b0;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .alert {
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .alert-success {
+      background: #e6f4ea;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+
+    .alert-error {
+      background: #fdecea;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <h1>DigiTransolutions</h1>
+      <p>Powered by ceo.digitransolution.in</p>
+    </div>
+
+    <h2>Create Your Account</h2>
+
+    <form id="signupForm" novalidate>
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input type="text" id="fullName" placeholder="Enter your full name" autocomplete="name" />
+        <span class="field-error" id="nameErr">Please enter your full name.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="Enter your email address" autocomplete="email" />
+        <span class="field-error" id="emailErr">Please enter a valid email address.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" placeholder="Enter your phone number" autocomplete="tel" />
+        <span class="field-error" id="phoneErr">Please enter a valid phone number.</span>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="getOtpBtn">Get OTP</button>
+    </form>
+
+    <div class="alert alert-success" id="successMsg"></div>
+    <div class="alert alert-error" id="errorMsg"></div>
+  </div>
+
+  <!-- OTP Modal -->
+  <div id="otpModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; padding:40px 36px; width:100%; max-width:380px; box-shadow:0 8px 40px rgba(0,0,0,0.18); text-align:center;">
+      <h3 style="font-size:19px; font-weight:700; color:#222; margin-bottom:8px;">Verify OTP</h3>
+      <p style="font-size:13px; color:#666; margin-bottom:24px;">An OTP has been sent to <strong id="otpEmailDisplay"></strong>. It expires in 5 minutes.</p>
+
+      <input type="text" id="otpInput" maxlength="6" placeholder="Enter 6-digit OTP"
+        style="width:100%; padding:13px; text-align:center; font-size:24px; letter-spacing:10px; border:1.5px solid #d0d7de; border-radius:8px; outline:none; background:#fafbfc; color:#1a73e8; font-weight:700;" />
+
+      <button id="verifyOtpBtn" class="btn btn-primary" style="margin-top:18px;">Verify &amp; Continue</button>
+
+      <div class="alert alert-error" id="otpErrorMsg" style="text-align:left;"></div>
+
+      <p style="font-size:12px; color:#888; margin-top:16px;">
+        Didn't receive? 
+        <a href="#" id="resendOtp" style="color:#1a73e8; text-decoration:none; font-weight:600;">Resend OTP</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const API = ''; // same origin
+
+    const form = document.getElementById('signupForm');
+    const getOtpBtn = document.getElementById('getOtpBtn');
+    const successMsg = document.getElementById('successMsg');
+    const errorMsg = document.getElementById('errorMsg');
+
+    // Inline validation helpers
+    function showFieldError(inputId, errId, show) {
+      const input = document.getElementById(inputId);
+      const err = document.getElementById(errId);
+      if (show) {
+        input.classList.add('error');
+        err.style.display = 'block';
+      } else {
+        input.classList.remove('error');
+        err.style.display = 'none';
+      }
+    }
+
+    function validateForm() {
+      const fullName = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      let valid = true;
+
+      if (!fullName) { showFieldError('fullName', 'nameErr', true); valid = false; }
+      else showFieldError('fullName', 'nameErr', false);
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !emailRegex.test(email)) { showFieldError('email', 'emailErr', true); valid = false; }
+      else showFieldError('email', 'emailErr', false);
+
+      const phoneRegex = /^[0-9]{7,15}$/;
+      if (!phone || !phoneRegex.test(phone.replace(/[\s\-\+]/g, ''))) { showFieldError('phone', 'phoneErr', true); valid = false; }
+      else showFieldError('phone', 'phoneErr', false);
+
+      return valid;
+    }
+
+    function showAlert(el, msg) {
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+    function hideAlerts() {
+      successMsg.style.display = 'none';
+      errorMsg.style.display = 'none';
+    }
+
+    async function sendOtp() {
+      hideAlerts();
+      if (!validateForm()) return;
+
+      const fullName = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+
+      getOtpBtn.disabled = true;
+      getOtpBtn.innerHTML = '<span class="spinner"></span>Sending OTP...';
+
+      try {
+        const res = await fetch('/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullName, email, phone })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showAlert(successMsg, data.message);
+          openOtpModal(email);
+        } else {
+          showAlert(errorMsg, data.message);
+        }
+      } catch (err) {
+        showAlert(errorMsg, 'Network error. Please try again.');
+      } finally {
+        getOtpBtn.disabled = false;
+        getOtpBtn.innerHTML = 'Get OTP';
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      sendOtp();
+    });
+
+    // --- OTP Modal ---
+    function openOtpModal(email) {
+      document.getElementById('otpEmailDisplay').textContent = email;
+      document.getElementById('otpInput').value = '';
+      document.getElementById('otpErrorMsg').style.display = 'none';
+      const modal = document.getElementById('otpModal');
+      modal.style.display = 'flex';
+    }
+
+    document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      const otp = document.getElementById('otpInput').value.trim();
+      const otpError = document.getElementById('otpErrorMsg');
+      const verifyBtn = document.getElementById('verifyOtpBtn');
+
+      otpError.style.display = 'none';
+
+      if (!otp || otp.length !== 6) {
+        otpError.textContent = 'Please enter the 6-digit OTP.';
+        otpError.style.display = 'block';
+        return;
+      }
+
+      verifyBtn.disabled = true;
+      verifyBtn.innerHTML = '<span class="spinner"></span>Verifying...';
+
+      try {
+        const res = await fetch('/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          // Store user data for next page
+          sessionStorage.setItem('verifiedUser', JSON.stringify(data.user));
+          window.location.href = '/dashboard.html';
+        } else {
+          otpError.textContent = data.message;
+          otpError.style.display = 'block';
+        }
+      } catch (err) {
+        otpError.textContent = 'Network error. Please try again.';
+        otpError.style.display = 'block';
+      } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = 'Verify &amp; Continue';
+      }
+    });
+
+    document.getElementById('resendOtp').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('otpModal').style.display = 'none';
+      sendOtp();
+    });
+
+    // Allow only digits in OTP input
+    document.getElementById('otpInput').addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '');
+    });
+  </script>
+</body>
+</html>

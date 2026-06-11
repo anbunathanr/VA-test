@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Verify OTP — DigiTran Solutions{% endblock %}
+
+{% block content %}
+<h2>Verify OTP</h2>
+
+<p style="text-align:center; font-size:14px; color:#555; margin-bottom:6px;">
+  OTP sent to
+</p>
+<p style="text-align:center; font-size:14px; font-weight:600; color:#1a73e8; margin-bottom:24px;">
+  {{ email }}
+</p>
+
+{% if demo_otp %}
+<!-- ── DEMO MODE OTP BOX ── -->
+<div style="
+  background: linear-gradient(135deg, #fff9e6, #fff3cc);
+  border: 2px dashed #f4a400;
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  text-align: center;
+">
+  <p style="margin:0 0 6px; font-size:12px; font-weight:700; color:#b06000;
+            text-transform:uppercase; letter-spacing:1px;">
+    🔑 Demo Mode — Your OTP
+  </p>
+  <div style="font-size:40px; font-weight:900; letter-spacing:14px;
+              color:#1a73e8; font-family:monospace; margin: 8px 0;">
+    {{ demo_otp }}
+  </div>
+  <p style="margin:8px 0 0; font-size:12px; color:#888;">
+    In production this would be emailed from ceo@digitransolutions.in
+  </p>
+  <button type="button"
+          onclick="document.getElementById('otp').value='{{ demo_otp }}'"
+          style="margin-top:12px; padding:7px 22px; background:#1a73e8;
+                 color:#fff; border:none; border-radius:8px; cursor:pointer;
+                 font-size:13px; font-weight:600;">
+    Auto-fill OTP
+  </button>
+</div>
+{% endif %}
+
+<form action="/verify-otp" method="POST">
+  <input type="hidden" name="email_token" value="{{ token }}">
+  <div class="form-group">
+    <label for="otp">Enter OTP</label>
+    <input type="text" id="otp" name="otp" maxlength="6"
+           placeholder="Enter 6-digit OTP"
+           autocomplete="one-time-code"
+           style="text-align:center; font-size:26px; font-weight:700;
+                  letter-spacing:10px; color:#1a73e8;"
+           required />
+  </div>
+
+  <button type="submit" class="btn btn-primary">Verify &amp; Login</button>
+</form>
+
+<p style="text-align:center; margin-top:18px;">
+  <a href="/" style="font-size:13px; color:#1a73e8; text-decoration:none; font-weight:600;">
+    ← Back to Sign In
+  </a>
+</p>
+
+<script>
+  document.getElementById('otp').addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '');
+  });
+</script>
+{% endblock %}

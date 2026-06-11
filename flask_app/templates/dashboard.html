@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — DigiTran Solutions{% endblock %}
+
+{% block content %}
+<div style="text-align:center;margin-bottom:14px;">
+  <span style="background:#e6f4ea;color:#2e7d32;border:1px solid #a5d6a7;
+               border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;">
+    ✅ Identity Verified
+  </span>
+</div>
+
+<h2 style="margin-bottom:12px;">Dashboard</h2>
+
+<div style="background:#f8faff;border:1px solid #dce8ff;border-radius:10px;
+            padding:11px 16px;margin-bottom:16px;font-size:13px;color:#444;">
+  <strong>{{ user.full_name }}</strong> &nbsp;·&nbsp; {{ user.email }} &nbsp;·&nbsp; {{ user.mobile }}
+</div>
+
+<!-- AUTH TOKEN stored in sessionStorage for reliable access -->
+<script>
+  // Store auth token from URL into sessionStorage immediately on page load
+  (function() {
+    const urlAuth = new URLSearchParams(window.location.search).get('auth');
+    if (urlAuth) sessionStorage.setItem('digitranva_auth', urlAuth);
+  })();
+</script>
+
+<!-- RUN BUTTON -->
+<button onclick="startTest()" id="testBtn" class="btn btn-primary"
+        style="background:linear-gradient(135deg,#1a73e8,#7c4dff);font-size:15px;">
+  🤖 Run Voice AI Automation Test
+</button>
+
+<!-- STATUS BANNER -->
+<div id="statusBanner" style="display:none;margin-top:14px;padding:16px 20px;
+     border-radius:10px;font-size:16px;font-weight:800;text-align:center;
+     letter-spacing:0.3px;"></div>
+
+<!-- PROGRESS -->
+<div id="progressSection" style="display:none;margin-top:12px;">
+  <div style="display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:4px;">
+    <span id="currentTest">Initializing...</span>
+    <span id="progressPct">0%</span>
+  </div>
+  <div style="background:#e8f0fe;border-radius:6px;height:8px;overflow:hidden;">
+    <div id="progressBar"
+         style="height:100%;width:0%;border-radius:6px;
+                background:linear-gradient(90deg,#1a73e8,#7c4dff);transition:width 0.5s;"></div>
+  </div>
+</div>
+
+<!-- SUMMARY STATS -->
+<div id="statsRow" style="display:none;margin-top:14px;
+     display:none;grid-template-columns:repeat(4,1fr);gap:10px;">
+  <div class="stat-card" id="stat-pass"  style="background:#e6f4ea;color:#2e7d32;">
+    <div class="stat-num" id="num-pass">0</div><div class="stat-lbl">Passed</div>
+  </div>
+  <div class="stat-card" id="stat-fail"  style="background:#fdecea;color:#c62828;">
+    <div class="stat-num" id="num-fail">0</div><div class="stat-lbl">Failed</div>
+  </div>
+  <div class="stat-card" id="stat-acc"   style="background:#f3e8ff;color:#7c4dff;">
+    <div class="stat-num" id="num-acc">0%</div><div class="stat-lbl">Avg Accuracy</div>
+  </div>
+  <div class="stat-card" id="stat-resp"  style="background:#e0f7fa;color:#00838f;">
+    <div class="stat-num" id="num-resp">0ms</div><div class="stat-lbl">Avg Response</div>
+  </div>
+</div>
+
+<!-- RESULTS TABLE -->
+<div id="resultsSection" style="display:none;margin-top:16px;">
+  <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:8px;">📋 Test Results</div>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead>
+        <tr style="background:#f5f7ff;">
+          <th style="padding:7px 8px;text-align:left;color:#888;border-bottom:2px solid #e8f0fe;">#</th>
+          <th style="padding:7px 8px;text-align:left;color:#888;border-bottom:2px solid #e8f0fe;">Test</th>
+          <th style="padding:7px 8px;text-align:left;color:#888;border-bottom:2px solid #e8f0fe;">Query</th>
+          <th style="padding:7px 8px;text-align:left;color:#888;border-bottom:2px solid #e8f0fe;">Status</th>
+          <th style="padding:7px 8px;text-align:left;color:#888;border-bottom:2px solid #e8f0fe;">Time</th>
+          <th style="padding:7px 8px;text-align:left;color:#888;border-bottom:2px solid #e8f0fe;">Actual Response</th>
+          <th style="padding:7px 8px;text-align:left;color:#888;border-bottom:2px solid #e8f0fe;">Accuracy</th>
+          <th style="padding:7px 8px;text-align:left;color:#888;border-bottom:2px solid #e8f0fe;">Matched</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- REPORT BUTTON -->
+<div id="reportSection" style="display:none;margin-top:14px;">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+    <a id="reportLink" href="#" target="_blank"
+       style="display:inline-block;padding:10px 20px;background:#1a73e8;color:#fff;
+              border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+      📄 View HTML Report
+    </a>
+    <a id="pdfLink" href="#" target="_blank"
+       style="display:none;padding:10px 20px;background:#7c4dff;color:#fff;
+              border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+      📑 Download PDF Report
+    </a>
+  </div>
+
+  <!-- Email status -->
+  <div id="emailStatus" style="display:none;margin-top:12px;padding:10px 14px;
+       border-radius:8px;font-size:13px;text-align:center;font-weight:600;"></div>
+</div>
+
+<p style="text-align:center;margin-top:18px;">
+  <a href="/logout" style="font-size:12px;color:#e53935;text-decoration:none;font-weight:600;">Logout</a>
+</p>
+
+<style>
+  .stat-card{border-radius:10px;padding:12px;text-align:center;}
+  .stat-num{font-size:22px;font-weight:800;}
+  .stat-lbl{font-size:11px;margin-top:2px;opacity:0.8;}
+</style>
+
+<script>
+  let pollInterval = null;
+
+  // Auto-detect API base — use same origin if local, API Gateway if on CloudFront
+  const IS_LOCAL   = window.location.hostname === 'localhost' ||
+                     window.location.hostname === '127.0.0.1';
+  const API_BASE   = IS_LOCAL
+    ? (window.location.origin)
+    : 'https://eokh12b9xk.execute-api.us-east-1.amazonaws.com/prod';
+
+  // Auth token — from sessionStorage (set on page load) or URL param
+  function getAuth() {
+    return sessionStorage.getItem('digitranva_auth') ||
+           new URLSearchParams(window.location.search).get('auth') || '';
+  }
+
+  const STATUS_CFG = {
+    pass:  {bg:'#e6f4ea', color:'#2e7d32', label:'✅ PASS'},
+    fail:  {bg:'#fdecea', color:'#c62828', label:'❌ FAIL'},
+    error: {bg:'#ffebee', color:'#b71c1c', label:'💥 ERROR'},
+    skip:  {bg:'#f5f5f5', color:'#777',    label:'⏭ SKIP'},
+    pending:{bg:'#f5f5f5',color:'#aaa',    label:'⏳ ...'},
+  };
+
+  function badge(s) {
+    const c = STATUS_CFG[s] || STATUS_CFG.pending;
+    return `<span style="background:${c.bg};color:${c.color};padding:2px 7px;
+            border-radius:10px;font-weight:700;font-size:11px;">${c.label}</span>`;
+  }
+
+  function accBar(score) {
+    const color = score >= 70 ? '#2e7d32' : score >= 40 ? '#e65100' : '#c62828';
+    return `<div style="display:flex;align-items:center;gap:4px;">
+      <div style="width:60px;background:#eee;border-radius:3px;height:6px;overflow:hidden;">
+        <div style="width:${score}%;height:100%;background:${color};border-radius:3px;"></div>
+      </div>
+      <span style="font-size:11px;color:${color};font-weight:700;">${score}%</span>
+    </div>`;
+  }
+
+  function setBanner(text, type) {
+    const el = document.getElementById('statusBanner');
+    const cfg = {
+      running:   {bg:'#e8f0fe', color:'#1a73e8', border:'#aac4f5'},
+      completed: {bg:'#e6f4ea', color:'#2e7d32', border:'#a5d6a7'},
+      failed:    {bg:'#fdecea', color:'#c62828', border:'#ef9a9a'},
+      partial:   {bg:'#fff3e0', color:'#e65100', border:'#ffcc80'},
+    }[type] || {bg:'#e8f0fe', color:'#1a73e8', border:'#aac4f5'};
+    el.style.cssText = `display:block;margin-top:14px;padding:16px 20px;border-radius:10px;
+      font-size:16px;font-weight:800;text-align:center;letter-spacing:0.3px;
+      background:${cfg.bg};color:${cfg.color};border:2px solid ${cfg.border};`;
+    el.textContent = text;
+  }
+
+  function renderResults(results) {
+    const tbody = document.getElementById('resultsBody');
+    tbody.innerHTML = '';
+    results.forEach((r, i) => {
+      const query   = r.query || (r.action === 'click_button' ? r.name.split('|')[1]?.trim() : '—') || '—';
+      const actual  = r.actual_response ? r.actual_response.substring(0, 90) + (r.actual_response.length > 90 ? '…' : '') : (r.error || '—');
+      const matched = (r.matched_keywords || []).slice(0,4).join(', ') || '—';
+      const acc     = r.overall_accuracy || 0;
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid #f3f3f3';
+      tr.innerHTML = `
+        <td style="padding:7px 8px;color:#aaa;">${i+1}</td>
+        <td style="padding:7px 8px;font-weight:500;max-width:160px;">${r.name}</td>
+        <td style="padding:7px 8px;color:#666;font-style:italic;">${query}</td>
+        <td style="padding:7px 8px;">${badge(r.status)}</td>
+        <td style="padding:7px 8px;color:#888;">${r.response_ms ? r.response_ms+'ms' : '—'}</td>
+        <td style="padding:7px 8px;color:#444;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+            title="${(r.actual_response||'').replace(/"/g,'')}">${actual}</td>
+        <td style="padding:7px 8px;">${accBar(acc)}</td>
+        <td style="padding:7px 8px;color:#2e7d32;font-size:11px;">${matched}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateStats(summary) {
+    const row = document.getElementById('statsRow');
+    row.style.display = 'grid';
+    document.getElementById('num-pass').textContent = summary.passed || 0;
+    document.getElementById('num-fail').textContent = (summary.failed||0) + (summary.errors||0);
+    document.getElementById('num-acc').textContent  = (summary.avg_accuracy || 0) + '%';
+    document.getElementById('num-resp').textContent = (summary.avg_response_ms || 0) + 'ms';
+  }
+
+  async function startTest() {
+    const btn       = document.getElementById('testBtn');
+    const authToken = getAuth();
+    btn.disabled    = true;
+    btn.textContent = '⏳ Running...';
+
+    document.getElementById('progressSection').style.display = 'block';
+    document.getElementById('resultsSection').style.display  = 'block';
+    document.getElementById('reportSection').style.display   = 'none';
+    document.getElementById('resultsBody').innerHTML         = '';
+
+    setBanner('⏳ Automation running — browser launching on your screen...', 'running');
+    setProgress(0, 'Starting Playwright...');
+
+    try {
+      const body = new URLSearchParams({auth_token: authToken});
+      const res  = await fetch(API_BASE + '/run-test',
+                               {method:'POST', body: body,
+                                headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+      const data = await res.json();
+
+      if (res.status === 503 || data.status === 'error') {
+        const msg = data.message || 'Unknown error';
+        setBanner((res.status === 503 ? '🖥️ ' : '❌ ') + msg,
+                  res.status === 503 ? 'partial' : 'failed');
+        btn.disabled = false; btn.textContent = '🤖 Run Voice AI Automation Test';
+        return;
+      }
+      pollInterval = setInterval(pollStatus, 1500);
+    } catch(e) {
+      setBanner('❌ Network error: ' + e.message, 'failed');
+      btn.disabled = false; btn.textContent = '🤖 Run Voice AI Automation Test';
+    }
+  }
+
+  function setProgress(pct, label) {
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+    if (label) document.getElementById('currentTest').textContent = label;
+  }
+
+  async function pollStatus() {
+    try {
+      const authToken = getAuth();
+      const res  = await fetch(API_BASE + '/test-status?auth=' + encodeURIComponent(authToken));
+      const data = await res.json();
+
+      setProgress(data.progress || 0, data.current_test || '');
+      if (data.results?.length) renderResults(data.results);
+      if (data.summary)         updateStats(data.summary);
+
+      if (data.status === 'completed' || data.status === 'failed') {
+        clearInterval(pollInterval);
+        setProgress(100, 'Done');
+
+        const s       = data.summary || {};
+        const overall = data.overall_status || (data.status === 'completed' ? 'PASSED' : 'FAILED');
+        const passed  = s.passed  ?? 0;
+        const total   = s.total   ?? 0;
+        const rate    = s.pass_rate   ?? 0;
+        const acc     = s.avg_accuracy ?? 0;
+        const rtime   = s.avg_response_ms ?? 0;
+
+        if (overall === 'PASSED') {
+          setBanner(
+            `✅ Automation Completed — ${passed}/${total} passed (${rate}%) | Avg accuracy: ${acc}% | Avg response: ${rtime}ms`,
+            'completed'
+          );
+        } else if (overall === 'FAILED') {
+          setBanner(
+            `❌ Automation Failed — ${passed}/${total} passed (${rate}%) | Avg accuracy: ${acc}%`,
+            'failed'
+          );
+        } else {
+          setBanner(
+            `⚠️ Automation Partial — ${passed}/${total} passed (${rate}%) | Avg accuracy: ${acc}%`,
+            'partial'
+          );
+        }
+
+        if (data.report_path) {
+          document.getElementById('reportLink').href = '/' + data.report_path;
+          document.getElementById('reportSection').style.display = 'block';
+        }
+
+        // PDF link
+        if (data.pdf_path) {
+          const pdfEl = document.getElementById('pdfLink');
+          pdfEl.href  = '/' + data.pdf_path;
+          pdfEl.style.display = 'inline-block';
+        }
+
+        // Email status
+        const emailEl = document.getElementById('emailStatus');
+        if (data.email_status === 'sent') {
+          emailEl.style.cssText = 'display:block;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:13px;text-align:center;font-weight:600;background:#e6f4ea;color:#2e7d32;border:1px solid #a5d6a7;';
+          emailEl.textContent   = '📧 PDF Report sent to ' + (data.email_message || 'your email') + ' via n8n';
+        } else if (data.email_status === 'failed') {
+          emailEl.style.cssText = 'display:block;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:13px;text-align:center;font-weight:600;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;';
+          emailEl.textContent   = '⚠️ n8n delivery failed: ' + (data.email_message || 'check N8N_WEBHOOK_URL in .env');
+        }
+
+        const btn = document.getElementById('testBtn');
+        btn.disabled = false; btn.textContent = '🤖 Run Voice AI Automation Test';
+      }
+    } catch(e) { /* ignore transient */ }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:Query",
+        "dynamodb:Scan"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:976193236457:table/Sessions",
+        "arn:aws:dynamodb:us-east-1:976193236457:table/OTP",
+        "arn:aws:dynamodb:us-east-1:976193236457:table/digitranva-conversations"
+      ]
+    }
+  ]
+}

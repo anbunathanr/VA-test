@@ -1,0 +1,52 @@
+# Secrets — NEVER commit these
+.env
+*.pem
+*.key
+
+# AWS deployment artifacts
+aws/flask_lambda.zip
+aws/flask_lambda_small.zip
+aws/flask_lambda_patched.zip
+aws/flask_src.zip
+aws/digitranva_deps_layer.zip
+aws/digitranva-key.pem
+
+# Lambda package (huge, built locally)
+flask_app/lambda_package/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Node
+node_modules/
+
+# Test artifacts
+flask_app/static/screenshots/
+flask_app/static/reports/
+
+# IDE
+.vscode/settings.json
+*.swp
+
+# Zip files
+*.zip
+
+# Temp/debug scripts
+test_*.py
+debug_*.py
+check_lambda.py
+deploy_*.py
+patch_lambda.py
+upload_lambda.py
+event.json
+lp.json
+lo.json
